@@ -1,0 +1,4 @@
+{
+    "refal-program-path"   : "example.ref",
+    "obfuscated-result-program-path": "result.ref"
+}

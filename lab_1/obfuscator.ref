@@ -1,0 +1,423 @@
+$ENTRY Go {
+    = <Main <Arg 1>>;
+};
+
+Main {
+    =   <Prout 'This is an obfuscator for refal-5 programs.'>
+        <Prout 'First program argument -- path to config file.'>
+        <Prout 'Usage ./obfuscate config.json'>
+        <Prout 'Example config:'>
+        <Prout '{'>
+        <Prout '    "refal-program-path": "./example.ref",'>
+        <Prout '    "obfuscated-result-program-path": "./obfucated-example.ref"'>
+        <Prout '}'>;
+    e.filepath, <ParseConfig e.filepath> : {
+        s.status e.result, s.status : {
+            OK = <Obfuscator>;
+            s.errorCode e.error = <Prout e.error>;
+        };
+    };
+};
+
+Obfuscator {
+    e.any, <ReadFile <Cp 'refal-program-path'>> : {
+         FILE_NOT_FOUND e.error = <Prout e.error>;
+         e.fileContent = 
+             <WriteToFile 
+                 (<Cp 'obfuscated-result-program-path'>)
+                 <Obfuscate <Scanner '\n' e.fileContent>>
+                 /* '\n' needed to skip first single-line comment if it's present*/
+             >; 
+    };
+};
+
+Obfuscate {
+*Prout заменить на TreeToRefal и добавить в конец вызов <GenerateObfuscateFuncs>
+    e.tree =  
+        <TreeToRefal 
+            <GenObfuscated 
+                (<GetFuncNewNames 10 e.tree>)
+                e.tree
+            >
+        >
+        <GenerateObfuscateFuncs>
+        <Prout 'obfuscation finished'>;
+};
+
+GenObfuscated {
+    t.funcDict e.tree, e.tree : {
+        t.head e.tail, t.head : {
+            (FUNC (FUNC_NAME e.funcName) e.body), <ObfuscateCalls 0 t.funcDict e.body> :
+                (e.funcDict) e.obfuscated, e.funcDict :
+                    e.1 ((e.funcName) s.num (e.F) (e.f)) e.2 = 
+                        (FUNC (FUNC_NAME e.F) e.obfuscated) '\n'
+                        (FUNC (FUNC_NAME e.f) e.obfuscated) '\n'
+                        <GenObfuscated (e.funcDict) e.tail>;
+            (ENTRY e.utilityTokens (FUNC_NAME e.funcName) e.body), <ObfuscateCalls 0 t.funcDict e.body> :
+                (e.funcDict) e.obfuscated =
+                    (ENTRY e.utilityTokens (FUNC_NAME e.funcName) e.obfuscated)
+                    <GenObfuscated (e.funcDict) e.tail>;
+            e.other = e.other <GenObfuscated t.funcDict e.tail> 
+        };
+        = (COMMENT '\n/* ' t.funcDict '*/\n');/* finished */
+    };
+
+};
+
+
+ObfuscateCalls {
+    s.mode t.funcDict e.call, e.call : {
+        t.head e.tail, t.head : {
+            (FUNC_CALL (FUNC_NAME e.funcName) e.body), <FindNewFuncName t.funcDict e.funcName> :
+                t.funcDict1 e.newFuncName, <ObfuscateCalls s.mode t.funcDict1 e.body> :
+                    t.funcDict2 e.obfuscatedFunc, <WrapCall s.mode (e.newFuncName) e.obfuscatedFunc> : 
+                        s.newMode e.wrappedCall, <ObfuscateCalls s.newMode t.funcDict2 e.tail> :
+                            t.funcDict3 e.obfuscated = 
+                                t.funcDict3
+                                (FUNC_CALL (FUNC_NAME 'F5') ' ' s.mode)                
+                                e.wrappedCall
+                                e.obfuscated;
+            (MU_CALL e.utilityTokens (FUNC_NAME e.funcName) e.body), <FindNewFuncName t.funcDict e.funcName> :
+                t.funcDict1 e.newFuncName, <ObfuscateCalls s.mode t.funcDict1 e.body> :
+                    t.funcDict2 e.obfuscatedMu, <ObfuscateCalls s.mode t.funcDict2 e.tail>:
+                        t.funcDict3 e.obfuscated = 
+                            t.funcDict3
+                            (MU_CALL e.utilityTokens (FUNC_NAME e.newFuncName) e.obfuscatedMu)
+                            e.obfuscated;
+            e.other, <ObfuscateCalls s.mode t.funcDict e.tail> :
+                t.funcDict1 e.obfuscated = t.funcDict1 t.head e.obfuscated;
+        };
+        = t.funcDict; /* finished */
+    };
+}
+
+WrapCall {
+    s.mode (e.funcName) e.args, s.mode : {
+        0 = 1 (MU_CALL ' ' (FUNC_NAME 'F2') ' ' (FUNC_CALL (FUNC_NAME e.funcName) e.args));
+        1 = 0 (FUNC_CALL (FUNC_NAME 'F4') ' ('e.funcName') ' e.args);
+    }
+}
+
+FindNewFuncName {
+    (e.funcDict) e.funcName, e.funcDict : {
+        e.1 ((e.funcName) s.num (e.F) (e.f)) e.2, s.num : {
+            0 = (e.1 ((e.funcName) 1 (e.F) (e.f)) e.2) e.F;
+            1 = (e.1 ((e.funcName) 0 (e.F) (e.f)) e.2) e.f;
+        };
+        e.2 = (e.funcDict) e.funcName;
+    };
+};
+
+GenerateObfuscateFuncs {
+    = 
+    '\nF1 {\n'
+    '   e.1 = (e.1);\n'
+    '};\n\n'
+    'F2 {\n'
+    '   e.1, <Mu F1 e.1> : (e.2) = e.2;\n'
+    '};\n\n'
+    'F3 {\n'
+    '       = TRUE;\n'
+    '   e.1 = FALSE e.1;\n'
+    '};\n\n'
+    'F4 {\n'
+    '   (s.1) e.2, <Mu F3 <Mu s.1 e.2>> : s.3 e.4 = e.4;\n'
+    '};\n\n'
+    'F5 {\n'
+    '   0 e.1 = <F6 0\'this is a trap\'>;\n'
+    '   s.d e.1 = <F7 <- s.d 1>>;\n'
+    '};\n\n'
+    'F6 {\n'
+    '   0 e.1 = <F7 \'this is a trap\'>;\n'
+    '   s.d e.1 = <F5 <- s.d 1>>;\n'
+    '};\n\n'
+    'F7 {\n'
+    '   e.str = ;\n'
+    '};\n\n'
+    'JustForFun { =; };\n';
+};
+
+TreeToRefal { /* TODO rewrite with respect to tree changes */
+    t.head e.tail, t.head : {
+        (s.type e.data), s.type : {
+            EXTERN = e.data <TreeToRefal e.tail>;
+            ENTRY = '$ENTRY' <TreeToRefal e.data> <TreeToRefal e.tail>;
+            FUNC = <TreeToRefal e.data> <TreeToRefal e.tail>;
+            COMMENT = e.data <TreeToRefal e.tail>;
+            STRING = e.data <TreeToRefal e.tail>;
+            FUNC_CALL = '<' <TreeToRefal e.data> '>' <TreeToRefal e.tail>;
+            MU_CALL = '<Mu' <TreeToRefal e.data> '>' <TreeToRefal e.tail>;
+            FUNC_NAME = e.data <TreeToRefal e.tail>;
+            s.other = <Prout 'no token type' s.other 'found'>;
+        };
+        s.char = s.char <TreeToRefal e.tail>;
+    };
+    = ; /* reversal completed */
+};
+
+GetFuncNewNames {
+    s.funcNum e.tree, e.tree : {
+        t.head e.tail, t.head : {
+            (FUNC  (FUNC_NAME e.funcName) e.body) = 
+                ((e.funcName) 0 ('F's.funcNum) ('f's.funcNum))'\n' 
+                <GetFuncNewNames <+ s.funcNum 1> e.tail>;
+            e.skip = <GetFuncNewNames s.funcNum e.tail>;
+        };
+        =;/* finished */
+    };
+};
+
+Scanner {
+    e.code = 
+        (COMMENT '* This is an obfuscated program')
+        <ParseRefal e.code>
+        <Prout 'refal-5 program scanned'>;
+};
+
+ParseRefal {
+    e.code = 
+        <ParseRefalProg  
+                <ScanCommentsAndStrings e.code>>; 
+};
+
+ParseRefalProg {
+    e.prog, <SkipUtilityTokens e.prog> :
+        (e.progNext) e.skippedReversed = <Reverse e.skippedReversed> <ParseRefalProgHelper e.progNext>;
+};
+
+ParseRefalProgHelper {
+    =; /* finished */
+    '$EXTERN' e.extern, <ScanExtern e.extern> :
+        (e.restProg) e.scannedExtern =
+            '$EXTERN' <Reverse e.scannedExtern>
+            <ParseRefalProg e.restProg>;
+    '$ENTRY' e.entry, <ScanEntry e.entry> :
+        (e.restProg) e.scannedEntry =
+            (ENTRY <Reverse e.scannedEntry>)
+            <ParseRefalProg e.restProg>;
+    ';' e.prog = ';' <ParseRefalProg e.prog>;
+    e.func, <ParseFunc e.func> :
+        (e.restProg) e.scannedFunc = 
+            (FUNC <Reverse e.scannedFunc>)
+            <ParseRefalProg e.restProg>;
+};
+
+SkipUtilityTokens {
+    (e.comment) e.prog = <SkipUtilityTokens e.prog> (e.comment);
+    s.ws e.prog, <Whitespace> : e.1 s.ws e.2 = <SkipUtilityTokens e.prog> s.ws;
+    e.any = (e.any);
+};
+
+ScanExtern {
+    e.externUtility, <SkipUtilityTokens e.externUtility> :
+        (e.extern) e.skippedReversed, e.extern : {
+            ',' e.externNext = <ScanExtern e.externNext> ',' e.skippedReversed;
+            ';' e.end = (e.end) ';' e.skippedReversed;
+            e.any , <ScanFuncName (e.any)> :
+                (e.funcName) e.externNext, e.funcName : {
+                    /* stop analysis if all scanned or bad syntax */ = e.skippedReversed;
+                    e.notEmptyString =
+                        <ScanExtern e.externNext>
+                        (EXTERN e.funcName)
+                        e.skippedReversed;
+                };
+        };
+};
+
+ScanEntry {
+    e.entryUtility, <SkipUtilityTokens e.entryUtility> :
+        (e.entry) e.skippedReversed = <ParseFunc e.entry> e.skippedReversed;
+};
+
+ParseFunc {
+    e.func, <ScanFuncName (e.func)> :
+        (e.funcName) e.funcBody, <SkipUtilityTokens e.funcBody> : {
+            ('{' e.body) e.skippedReversed = 
+                <ParseFuncBody <SkipUtilityTokens e.body>>
+                '{' e.skippedReversed
+                (FUNC_NAME e.funcName);
+            (e.body) e.skippedReversed = () e.skippedReversed (FUNC_NAME e.funcName); /*bad syntax*/
+        };
+};
+
+ScanFuncName {
+    (s.char e.tail) e.scanned, <FuncNameChar> : 
+        e.2 s.char e.3 = <ScanFuncName (e.tail) e.scanned s.char>;
+    (e.restProg) e.scanned = (e.scanned) e.restProg;
+};
+
+ParseFuncBody {
+    (s.char e.body) e.scanned, s.char : {
+        '{' = 
+            <ParseFuncBody  
+                <SkipUtilityTokens e.body>
+                BLOCK e.scanned
+            >;
+        '}', e.scanned : {
+            e.1 BLOCK e.2 BLOCK e.3 = 
+                <ParseFuncBody 
+                    <SkipUtilityTokens e.body>
+                    '}' e.1 '{' e.2 BLOCK e.3
+                >;
+            e.1 BLOCK e.2 = 
+                <ParseFuncBody 
+                    <SkipUtilityTokens e.body>> 
+                '}' e.1 '{' e.2;
+            e.endFunc = (e.body) '}' e.scanned;
+        };
+        '<', <ScanFuncName (e.body)> : {
+            (e.funcName) e.body1, e.funcName : {
+                'Mu', <SkipUtilityTokens e.body1> :
+                    (e.body2) e.scannedNext, <ScanFuncName (e.body2)> :
+                        (e.muFuncName) e.body3 =
+                            <ParseFuncBody 
+                                <SkipUtilityTokens e.body3> 
+                                (FUNC_NAME e.muFuncName) e.scannedNext MU_CALL
+                                e.scanned
+                            >; 
+                e.name = 
+                    <ParseFuncBody
+                        <SkipUtilityTokens e.body1> 
+                        (FUNC_NAME e.funcName) FUNC_CALL
+                        e.scanned
+                    >;
+            };
+        };
+        '>', e.scanned : {
+            e.callBody MU_CALL e.rest = <ParseFuncBody <SkipUtilityTokens e.body> (MU_CALL <Reverse e.callBody>) e.rest>;
+            e.callBody FUNC_CALL e.rest = <ParseFuncBody <SkipUtilityTokens e.body> (FUNC_CALL <Reverse e.callBody>) e.rest>;  
+            e.callBody = <ParseFuncBody <SkipUtilityTokens e.body> (FUNC_CALL <Reverse e.callBody>)>;
+        };
+        s.quote, <Quote> : 
+            e.1 s.quote e.2, <ScanString s.quote (e.body)> :
+                (e.scannedString) e.body2 = 
+                    <ParseFuncBody  
+                        <SkipUtilityTokens e.body2> 
+                        (STRING s.quote e.scannedString s.quote) 
+                        e.scanned
+                    >;
+        s.bodyChar  =
+            <ParseFuncBody  
+                <SkipUtilityTokens e.body>
+                s.bodyChar 
+                e.scanned
+            >; /* skip other body chars */
+    };
+    t.body e.scanned = () e.scanned; /* stop analysis if all scanned */
+};
+
+
+ScanCommentsAndStrings {
+    '\n*' e.comment '\n' e.str = /* scan one-line comments */
+        (COMMENT '\n*' e.comment)
+        <ScanCommentsAndStrings '\n' e.str>;
+    '/*' e.comment '*/' e.str = /* scan multiline-line comments */
+        (COMMENT '/*' e.comment '*/')
+        <ScanCommentsAndStrings e.str>;
+    s.char e.str, <Quote> : {
+        e.1 s.char e.2, <ScanString s.char (e.str)> : 
+            (e.scannedString) e.restStr = 
+                (STRING s.char e.scannedString s.char)
+                <ScanCommentsAndStrings e.restStr>;
+        e.1 = s.char <ScanCommentsAndStrings e.str>;
+    };
+    =; /* finished */
+};
+
+ScanString {
+    s.quote (e.str) e.scanned, e.str : {
+        e.before s.quote e.after, e.before : {
+            e.part '\\\\' = (e.scanned e.before) e.after;
+            e.part '\\' = <ScanString s.quote (e.after) e.scanned e.before s.quote>;
+            e.part = (e.scanned e.before) e.after;
+        };
+        e.noQuote = (e.noQuote);
+    };
+};
+
+
+Reverse {
+    t.head e.tail, t.head : {
+        (e.any) = <Reverse e.tail> (e.any);
+        s.char = <Reverse e.tail> s.char;
+    };
+    =;/* finished */
+};
+
+FuncNameChar {
+    = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-';
+};
+
+Whitespace {
+    = ' \n\r\t'; 
+};
+
+Quote {
+    = '\'\"';
+};
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;/*                                UTILS                                  */;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ 
+* Parses json-file
+* Buries in stack config fields
+ParseConfig {
+    e.filepath, <ReadFile e.filepath> : {
+        FILE_NOT_FOUND e.error = FILE_NOT_FOUND e.error;
+        e.whitespace '{' e.json = <ParseJson e.json>;
+        e.json = <WrongJson e.json>;
+   };
+};
+
+* Parses json-struct
+ParseJson {
+    e.ws1 '\"' e.key '\"' e.ws2 ':' e.tail1, e.tail1 : {
+        e.ws3 '\"' e.value '\"' e.tail2, e.tail2 : {
+            e.ws4 ',' e.tail3 = <AddToStack (e.key) e.value> 
+                                <ParseJson e.tail3>;
+            e.ws4 '}' e.tail4 = <AddToStack (e.key) e.value> OK;
+            e.json = <WrongJson e.json>;
+        };
+        e.json = <WrongJson e.json>;
+    };
+    e.json = <WrongJson e.json>;
+};
+
+AddToStack {
+    (e.key) e.value = <Prout 'added to stack: ' e.key ' = ' e.value>
+                      <Br e.key '=' e.value>;
+    = ;
+};
+
+WrongJson {
+    e.wrongJson = WRONG_JSON 'wrong json format: ' e.wrongJson;
+};
+
+* input: filepath
+* output: FILE_NOT_FOUND {error} | file content
+* uses 1-st descriptor
+ReadFile {
+    e.filepath, <ExistFile e.filepath> : {
+        True = <Open 'r' 1 e.filepath>
+               <ReadFileHelper>
+               <Close 1>
+               <Prout 'read file: ' e.filepath>;
+        False = FILE_NOT_FOUND 'no file ' e.filepath ' found'; 
+    };
+};
+
+ReadFileHelper {
+    e.any, <Get 1> : {
+        e.str 0 = e.str;
+        e.str = e.str '\n' <ReadFileHelper>;
+    };
+};
+
+WriteToFile {
+    (e.filepath) e.fileContent = 
+        <Open 'w' 1 e.filepath>
+        <Put 1 e.fileContent>
+        <Close 1>
+        <Prout 'written to file: ' e.filepath>;
+};
