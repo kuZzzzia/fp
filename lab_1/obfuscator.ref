@@ -32,30 +32,33 @@ Obfuscator {
 };
 
 Obfuscate {
-    e.tree =  
-        <TreeToRefal 
-            <GenObfuscated 
-                (<GetFuncNewNames 10 e.tree>)
-                e.tree
-            >
-        >
-        <GenerateObfuscateFuncs>
-        <Prout 'obfuscation finished'>;
+    e.tree, <GetExternFuncNames e.tree> :
+        e.extern, <GetFuncNewNames 0 (e.extern) e.tree> :
+            s.funcNum e.dict, <GenerateObfuscateFuncs (<+ s.funcNum 1>) e.extern> :
+                t.names e.generated = 
+                    <TreeToRefal 
+                        <GenObfuscated 
+                            ((e.dict) t.names)
+                            e.tree
+                        >
+                    >
+                    e.generated
+                    <Prout 'obfuscation finished'>;
 };
 
 GenObfuscated {
     t.funcDict e.tree, e.tree : {
         t.head e.tail, t.head : {
             (FUNC (FUNC_NAME e.funcName) e.body), <ObfuscateCalls 0 t.funcDict e.body> :
-                (e.funcDict) e.obfuscated, e.funcDict :
+                ((e.funcDict) t.obfuscateFuncs) e.obfuscated, e.funcDict :
                     e.1 ((e.funcName) s.num (e.F) (e.f)) e.2 = 
                         (FUNC (FUNC_NAME e.F) e.obfuscated) '\n'
                         (FUNC (FUNC_NAME e.f) e.obfuscated) '\n'
-                        <GenObfuscated (e.funcDict) e.tail>;
+                        <GenObfuscated ((e.funcDict) t.obfuscateFuncs) e.tail>;
             (ENTRY e.utilityTokens (FUNC_NAME e.funcName) e.body), <ObfuscateCalls 0 t.funcDict e.body> :
-                (e.funcDict) e.obfuscated =
+                ((e.funcDict) t.obfuscateFuncs) e.obfuscated =
                     (ENTRY e.utilityTokens (FUNC_NAME e.funcName) e.obfuscated)
-                    <GenObfuscated (e.funcDict) e.tail>;
+                    <GenObfuscated ((e.funcDict) t.obfuscateFuncs) e.tail>;
             e.other = e.other <GenObfuscated t.funcDict e.tail> 
         };
         = (COMMENT '\n/* ' t.funcDict '*/\n');/* finished */
@@ -65,35 +68,35 @@ GenObfuscated {
 
 
 ObfuscateCalls {
-    s.mode t.funcDict e.call, e.call : {
+    s.mode (t.funcDict ((e.nothing) e.obfuscateFuncs)) e.call, e.call : {
         t.head e.tail, t.head : {
             (FUNC_CALL (FUNC_NAME e.funcName) e.body), <FindNewFuncName t.funcDict e.funcName> :
-                t.funcDict1 e.newFuncName, <ObfuscateCalls s.mode t.funcDict1 e.body> :
-                    t.funcDict2 e.obfuscatedFunc, <WrapCall s.mode (e.newFuncName) e.obfuscatedFunc> : 
+                t.funcDict1 e.newFuncName, <ObfuscateCalls s.mode (t.funcDict1 ((e.nothing) e.obfuscateFuncs)) e.body> :
+                    t.funcDict2 e.obfuscatedFunc, <WrapCall s.mode (e.obfuscateFuncs) (e.newFuncName) e.obfuscatedFunc> : 
                         s.newMode e.wrappedCall, <ObfuscateCalls s.newMode t.funcDict2 e.tail> :
                             t.funcDict3 e.obfuscated = 
                                 t.funcDict3
-                                (FUNC_CALL (FUNC_NAME 'F5') ' ' s.mode)                
+                                (FUNC_CALL (FUNC_NAME e.nothing) )                
                                 e.wrappedCall
                                 e.obfuscated;
             (MU_CALL e.utilityTokens (FUNC_NAME e.funcName) e.body), <FindNewFuncName t.funcDict e.funcName> :
-                t.funcDict1 e.newFuncName, <ObfuscateCalls s.mode t.funcDict1 e.body> :
+                t.funcDict1 e.newFuncName, <ObfuscateCalls s.mode (t.funcDict1 ((e.nothing) e.obfuscateFuncs)) e.body> :
                     t.funcDict2 e.obfuscatedMu, <ObfuscateCalls s.mode t.funcDict2 e.tail>:
                         t.funcDict3 e.obfuscated = 
                             t.funcDict3
                             (MU_CALL e.utilityTokens (FUNC_NAME e.newFuncName) e.obfuscatedMu)
                             e.obfuscated;
-            e.other, <ObfuscateCalls s.mode t.funcDict e.tail> :
+            e.other, <ObfuscateCalls s.mode (t.funcDict ((e.nothing) e.obfuscateFuncs)) e.tail> :
                 t.funcDict1 e.obfuscated = t.funcDict1 t.head e.obfuscated;
         };
-        = t.funcDict; /* finished */
+        = (t.funcDict ((e.nothing) e.obfuscateFuncs)); /* finished */
     };
 }
 
 WrapCall {
-    s.mode (e.funcName) e.args, s.mode : {
-        0 = 1 (MU_CALL ' ' (FUNC_NAME 'F2') ' ' (FUNC_CALL (FUNC_NAME e.funcName) e.args));
-        1 = 0 (FUNC_CALL (FUNC_NAME 'F4') ' ('e.funcName') ' e.args);
+    s.mode ((e.1) (e.2)) (e.funcName) e.args, s.mode : {
+        0 = 1 (MU_CALL ' ' (FUNC_NAME e.1) (FUNC_CALL (FUNC_NAME e.funcName) e.args));
+        1 = 0 (FUNC_CALL (FUNC_NAME e.2) '('e.funcName') ' e.args);
     }
 }
 
@@ -108,33 +111,51 @@ FindNewFuncName {
 };
 
 GenerateObfuscateFuncs {
-    = 
-    '\nF1 {\n'
-    '   e.1 = (e.1);\n'
-    '};\n\n'
-    'F2 {\n'
-    '   e.1, <Mu F1 e.1> : (e.2) = e.2;\n'
-    '};\n\n'
-    'F3 {\n'
-    '       = TRUE;\n'
-    '   e.1 = FALSE e.1;\n'
-    '};\n\n'
-    'F4 {\n'
-    '   (s.1) e.2, <Mu F3 <Mu s.1 e.2>> : s.3 e.4 = e.4;\n'
-    '};\n\n'
-    'F5 {\n'
-    '   0 e.1 = <F6 0\'this is a trap\'>;\n'
-    '   s.d e.1 = <F7 <- s.d 1>>;\n'
-    '};\n\n'
-    'F6 {\n'
-    '   0 e.1 = <F7 \'this is a trap\'>;\n'
-    '   s.d e.1 = <F5 <- s.d 1>>;\n'
-    '};\n\n'
-    'F7 {\n'
-    '   e.str = ;\n'
-    '};\n\n'
-    'JustForFun { =; };\n';
+    (s.funcNum) e.extern, <GenerateObfuscateNothing (s.funcNum) e.extern> : 
+        s.nextFuncNum1 t.funcName1 e.func1, <GetNextFreeFuncNumber (e.extern) s.nextFuncNum1> :
+            s.nextFuncNum2, <GenerateObfuscateWrap <+ s.nextFuncNum2 1> ('F' s.nextFuncNum2) e.extern> :
+                s.nextFuncNum3 t.funcName2 e.func2, <GetNextFreeFuncNumber (e.extern)  s.nextFuncNum3> :
+                    s.nextFuncNum4, <GenerateObfuscateIsEmpty <+ s.nextFuncNum4 1> ('F' s.nextFuncNum4) e.extern> :
+                        s.nextFuncNum5 t.funcName3 e.func3 = 
+                            (t.funcName1 t.funcName2 t.funcName3) 
+                            e.func1 
+                            '\nF' s.nextFuncNum2 '{\n'
+                            '   e.1 = (e.1);\n'
+                            '};\n\n'
+                            e.func2
+                            'F' s.nextFuncNum4 '{\n'
+                            '       = TRUE;\n'
+                            '   e.1 = FALSE e.1;\n'
+                            '};\n\n'
+                            e.func3;
 };
+
+GenerateObfuscateWrap {
+    s.funcNum (e.funcName) e.extern, <GetNextFreeFuncNumber (e.extern) s.funcNum> :
+        s.nextFuncNum = 
+            <+ s.nextFuncNum 1> ('F' s.nextFuncNum)
+            'F' s.nextFuncNum '{\n'
+            '   e.1, <Mu ' e.funcName 'e.1> : (e.2) = e.2;\n'
+            '};\n\n';
+};
+
+GenerateObfuscateIsEmpty {
+    s.funcNum (e.funcName) e.extern, <GetNextFreeFuncNumber (e.extern) s.funcNum> :
+        s.nextFuncNum = 
+            <+ s.nextFuncNum 1> ('F' s.nextFuncNum)
+            'F' s.nextFuncNum '{\n'
+            '   (s.1) e.2, <Mu ' e.funcName '<Mu s.1 e.2>> : s.3 e.4 = e.4;\n'
+            '};\n\n';
+};
+
+GenerateObfuscateNothing {
+    (s.funcNum) e.extern, <GetNextFreeFuncNumber (e.extern) s.funcNum> :
+        s.nextFuncNum = 
+            <+ s.nextFuncNum 1> ('F' s.nextFuncNum)
+            'F' s.nextFuncNum '{\n'
+            '   =;\n'
+            '};\n\n';
+}
 
 TreeToRefal {
     t.head e.tail, t.head : {
@@ -155,16 +176,42 @@ TreeToRefal {
 };
 
 GetFuncNewNames {
-    s.funcNum e.tree, e.tree : {
+    s.funcNum t.extern e.tree, e.tree : {
         t.head e.tail, t.head : {
-            (FUNC  (FUNC_NAME e.funcName) e.body) = 
-                ((e.funcName) 0 ('F's.funcNum) ('f's.funcNum))'\n' 
-                <GetFuncNewNames <+ s.funcNum 1> e.tail>;
-            e.skip = <GetFuncNewNames s.funcNum e.tail>;
+            (FUNC  (FUNC_NAME e.funcName) e.body), <GetNextFreeFuncNumber t.extern s.funcNum> :  
+                s.nextFuncNum =  
+                    <GetFuncNewNames <+ s.nextFuncNum 1> t.extern e.tail>
+                    ((e.funcName) 0 ('F' s.nextFuncNum) ('f' s.nextFuncNum))'\n';
+            e.skip = <GetFuncNewNames s.funcNum t.extern e.tail>;
         };
-        =;/* finished */
+        = s.funcNum;/* finished */
     };
 };
+
+GetNextFreeFuncNumber {
+    t.extern s.funcNum, <CheckFuncName t.extern <Symb s.funcNum>> : {
+        T = <GetNextFreeFuncNumber t.extern <+ s.funcNum 1>>;
+        F = s.funcNum;
+    };
+};
+
+CheckFuncName {
+    (e.extern) e.funcNum, e.extern : {
+        e.1 'F' e.funcNum e.2 = T;
+        e.1 'f' e.funcNum e.2 = T;
+        e.else = F;
+    };
+} 
+
+GetExternFuncNames {
+    t.head e.tail, t.head : {
+        (EXTERN e.funcName) = 
+            '#' e.funcName 
+            <GetExternFuncNames e.tail>;
+        e.skip = <GetExternFuncNames e.tail>;
+    };
+    =;/* finished */
+}
 
 Scanner {
     e.code = 
@@ -242,8 +289,16 @@ ParseFunc {
 ScanFuncName {
     (s.char e.tail) e.scanned, <FuncNameChar> : 
         e.2 s.char e.3 = <ScanFuncName (e.tail) e.scanned s.char>;
-    (e.restProg) e.scanned = (e.scanned) e.restProg;
+    (e.restProg) e.scanned = (<ChangeArithmOpToIdent e.scanned>) e.restProg;
 };
+
+ChangeArithmOpToIdent {
+    '+' = 'Add';
+    '-' = 'Sub';
+    '*' = 'Mul';
+    '/' = 'Div';
+    e.else = e.else;
+}
 
 ParseFuncBody {
     (s.char e.body) e.scanned, s.char : {
@@ -336,8 +391,12 @@ Reverse {
 };
 
 FuncNameChar {
-    = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-';
+    = <ArithmOp> 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_';
 };
+
+ArithmOp {
+    = '+-*/';
+}
 
 Whitespace {
     = ' \n\r\t'; 
