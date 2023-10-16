@@ -46,6 +46,24 @@ Obfuscate {
                     <Prout 'obfuscation finished'>;
 };
 
+TreeToRefal {
+    t.head e.tail, t.head : {
+        (s.type e.data), s.type : {
+            EXTERN = e.data <TreeToRefal e.tail>;
+            ENTRY = '$ENTRY' <TreeToRefal e.data> <TreeToRefal e.tail>;
+            FUNC = <TreeToRefal e.data> <TreeToRefal e.tail>;
+            COMMENT = e.data <TreeToRefal e.tail>;
+            STRING = e.data <TreeToRefal e.tail>;
+            FUNC_CALL = '<' <TreeToRefal e.data> '>' <TreeToRefal e.tail>;
+            MU_CALL = '<Mu' <TreeToRefal e.data> '>' <TreeToRefal e.tail>;
+            FUNC_NAME = e.data <TreeToRefal e.tail>;
+            s.other = <Prout 'no token type' s.other 'found'>;
+        };
+        s.char = s.char <TreeToRefal e.tail>;
+    };
+    = ; /* reversal completed */
+};
+
 GenObfuscated {
     t.funcDict e.tree, e.tree : {
         t.head e.tail, t.head : {
@@ -91,14 +109,14 @@ ObfuscateCalls {
         };
         = (t.funcDict ((e.nothing) e.obfuscateFuncs)); /* finished */
     };
-}
+};
 
 WrapCall {
     s.mode ((e.1) (e.2)) (e.funcName) e.args, s.mode : {
         0 = 1 (MU_CALL ' ' (FUNC_NAME e.1) (FUNC_CALL (FUNC_NAME e.funcName) e.args));
         1 = 0 (FUNC_CALL (FUNC_NAME e.2) '('e.funcName') ' e.args);
     }
-}
+};
 
 FindNewFuncName {
     (e.funcDict) e.funcName, e.funcDict : {
@@ -155,37 +173,6 @@ GenerateObfuscateNothing {
             'F' s.nextFuncNum '{\n'
             '   =;\n'
             '};\n\n';
-}
-
-TreeToRefal {
-    t.head e.tail, t.head : {
-        (s.type e.data), s.type : {
-            EXTERN = e.data <TreeToRefal e.tail>;
-            ENTRY = '$ENTRY' <TreeToRefal e.data> <TreeToRefal e.tail>;
-            FUNC = <TreeToRefal e.data> <TreeToRefal e.tail>;
-            COMMENT = e.data <TreeToRefal e.tail>;
-            STRING = e.data <TreeToRefal e.tail>;
-            FUNC_CALL = '<' <TreeToRefal e.data> '>' <TreeToRefal e.tail>;
-            MU_CALL = '<Mu' <TreeToRefal e.data> '>' <TreeToRefal e.tail>;
-            FUNC_NAME = e.data <TreeToRefal e.tail>;
-            s.other = <Prout 'no token type' s.other 'found'>;
-        };
-        s.char = s.char <TreeToRefal e.tail>;
-    };
-    = ; /* reversal completed */
-};
-
-GetFuncNewNames {
-    s.funcNum t.extern e.tree, e.tree : {
-        t.head e.tail, t.head : {
-            (FUNC  (FUNC_NAME e.funcName) e.body), <GetNextFreeFuncNumber t.extern s.funcNum> :  
-                s.nextFuncNum =  
-                    <GetFuncNewNames <+ s.nextFuncNum 1> t.extern e.tail>
-                    ((e.funcName) 0 ('F' s.nextFuncNum) ('f' s.nextFuncNum))'\n';
-            e.skip = <GetFuncNewNames s.funcNum t.extern e.tail>;
-        };
-        = s.funcNum;/* finished */
-    };
 };
 
 GetNextFreeFuncNumber {
@@ -201,7 +188,20 @@ CheckFuncName {
         e.1 'f' e.funcNum e.2 = T;
         e.else = F;
     };
-} 
+};
+
+GetFuncNewNames {
+    s.funcNum t.extern e.tree, e.tree : {
+        t.head e.tail, t.head : {
+            (FUNC  (FUNC_NAME e.funcName) e.body), <GetNextFreeFuncNumber t.extern s.funcNum> :  
+                s.nextFuncNum =  
+                    <GetFuncNewNames <+ s.nextFuncNum 1> t.extern e.tail>
+                    ((e.funcName) 0 ('F' s.nextFuncNum) ('f' s.nextFuncNum))'\n';
+            e.skip = <GetFuncNewNames s.funcNum t.extern e.tail>;
+        };
+        = s.funcNum;/* finished */
+    };
+};
 
 GetExternFuncNames {
     t.head e.tail, t.head : {
@@ -211,7 +211,7 @@ GetExternFuncNames {
         e.skip = <GetExternFuncNames e.tail>;
     };
     =;/* finished */
-}
+};
 
 Scanner {
     e.code = 
@@ -298,7 +298,7 @@ ChangeArithmOpToIdent {
     '*' = 'Mul';
     '/' = 'Div';
     e.else = e.else;
-}
+};
 
 ParseFuncBody {
     (s.char e.body) e.scanned, s.char : {
@@ -396,7 +396,7 @@ FuncNameChar {
 
 ArithmOp {
     = '+-*/';
-}
+};
 
 Whitespace {
     = ' \n\r\t'; 
