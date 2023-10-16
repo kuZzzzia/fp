@@ -32,7 +32,6 @@ Obfuscator {
 };
 
 Obfuscate {
-*Prout заменить на TreeToRefal и добавить в конец вызов <GenerateObfuscateFuncs>
     e.tree =  
         <TreeToRefal 
             <GenObfuscated 
@@ -137,7 +136,7 @@ GenerateObfuscateFuncs {
     'JustForFun { =; };\n';
 };
 
-TreeToRefal { /* TODO rewrite with respect to tree changes */
+TreeToRefal {
     t.head e.tail, t.head : {
         (s.type e.data), s.type : {
             EXTERN = e.data <TreeToRefal e.tail>;
@@ -288,18 +287,10 @@ ParseFuncBody {
             e.callBody FUNC_CALL e.rest = <ParseFuncBody <SkipUtilityTokens e.body> (FUNC_CALL <Reverse e.callBody>) e.rest>;  
             e.callBody = <ParseFuncBody <SkipUtilityTokens e.body> (FUNC_CALL <Reverse e.callBody>)>;
         };
-        s.quote, <Quote> : 
-            e.1 s.quote e.2, <ScanString s.quote (e.body)> :
-                (e.scannedString) e.body2 = 
-                    <ParseFuncBody  
-                        <SkipUtilityTokens e.body2> 
-                        (STRING s.quote e.scannedString s.quote) 
-                        e.scanned
-                    >;
-        s.bodyChar  =
+        s.token  =
             <ParseFuncBody  
                 <SkipUtilityTokens e.body>
-                s.bodyChar 
+                s.token 
                 e.scanned
             >; /* skip other body chars */
     };
