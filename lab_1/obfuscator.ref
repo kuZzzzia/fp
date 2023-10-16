@@ -129,11 +129,11 @@ FindNewFuncName {
 };
 
 GenerateObfuscateFuncs {
-    (s.funcNum) e.extern, <GenerateObfuscateNothing (s.funcNum) e.extern> : 
+    (s.funcNum) e.extern, <GenerateObfuscateNothing (<GetNextFreeFuncNumber (e.extern) s.funcNum>) e.extern> : 
         s.nextFuncNum1 t.funcName1 e.func1, <GetNextFreeFuncNumber (e.extern) s.nextFuncNum1> :
-            s.nextFuncNum2, <GenerateObfuscateWrap <+ s.nextFuncNum2 1> ('F' s.nextFuncNum2) e.extern> :
+            s.nextFuncNum2, <GenerateObfuscateWrap <GetNextFreeFuncNumber (e.extern) <+ s.nextFuncNum2 1>> ('F' s.nextFuncNum2) e.extern> :
                 s.nextFuncNum3 t.funcName2 e.func2, <GetNextFreeFuncNumber (e.extern)  s.nextFuncNum3> :
-                    s.nextFuncNum4, <GenerateObfuscateIsEmpty <+ s.nextFuncNum4 1> ('F' s.nextFuncNum4) e.extern> :
+                    s.nextFuncNum4, <GenerateObfuscateIsEmpty <GetNextFreeFuncNumber (e.extern) <+ s.nextFuncNum4 1>> ('F' s.nextFuncNum4) e.extern> :
                         s.nextFuncNum5 t.funcName3 e.func3 = 
                             (t.funcName1 t.funcName2 t.funcName3) 
                             e.func1 
@@ -149,30 +149,27 @@ GenerateObfuscateFuncs {
 };
 
 GenerateObfuscateWrap {
-    s.funcNum (e.funcName) e.extern, <GetNextFreeFuncNumber (e.extern) s.funcNum> :
-        s.nextFuncNum = 
-            <+ s.nextFuncNum 1> ('F' s.nextFuncNum)
-            'F' s.nextFuncNum '{\n'
-            '   e.1, <Mu ' e.funcName 'e.1> : (e.2) = e.2;\n'
-            '};\n\n';
+    s.funcNum (e.funcName) e.extern = 
+        <+ s.funcNum 1> ('F' s.funcNum)
+        'F' s.funcNum '{\n'
+        '   e.1, <Mu ' e.funcName 'e.1> : (e.2) = e.2;\n'
+        '};\n\n';
 };
 
 GenerateObfuscateIsEmpty {
-    s.funcNum (e.funcName) e.extern, <GetNextFreeFuncNumber (e.extern) s.funcNum> :
-        s.nextFuncNum = 
-            <+ s.nextFuncNum 1> ('F' s.nextFuncNum)
-            'F' s.nextFuncNum '{\n'
-            '   (s.1) e.2, <Mu ' e.funcName '<Mu s.1 e.2>> : s.3 e.4 = e.4;\n'
-            '};\n\n';
+    s.funcNum (e.funcName) e.extern =
+        <+ s.funcNum 1> ('F' s.funcNum)
+        'F' s.funcNum '{\n'
+        '   (s.1) e.2, <Mu ' e.funcName '<Mu s.1 e.2>> : s.3 e.4 = e.4;\n'
+        '};\n\n';
 };
 
 GenerateObfuscateNothing {
-    (s.funcNum) e.extern, <GetNextFreeFuncNumber (e.extern) s.funcNum> :
-        s.nextFuncNum = 
-            <+ s.nextFuncNum 1> ('F' s.nextFuncNum)
-            'F' s.nextFuncNum '{\n'
-            '   =;\n'
-            '};\n\n';
+    (s.funcNum) e.extern = 
+        <+ s.funcNum 1> ('F' s.funcNum)
+        'F' s.funcNum '{\n'
+        '   =;\n'
+        '};\n\n';
 };
 
 GetNextFreeFuncNumber {
