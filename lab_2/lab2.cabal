@@ -1,0 +1,20 @@
+cabal-version:      3.4
+name:               cps-translator
+version:            0.1.0.0
+
+author:             Maksim
+maintainer:         mkuzovchikov@gmail.com
+
+library
+    exposed-modules:  CPS
+    build-depends:    base ^>=4.17.2.0
+    hs-source-dirs:   src
+
+executable cps-translator
+    main-is:          Main.hs
+
+    build-depends:
+        base ^>=4.17.2.0,
+        cps-translator
+
+    hs-source-dirs:   app
