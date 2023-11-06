@@ -1,7 +1,7 @@
 build:
 	cabal build
 run:
-	cabal run
+	cabal run cps-translator -- test.hs
 
 clean:
 	rm -rf dist*
