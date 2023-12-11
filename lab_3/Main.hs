@@ -38,7 +38,11 @@ instance Monad ErrorTree
         -- (>>=) :: ErrorTree a -> (a -> ErrorTree b) -> ErrorTree b
         (>>=) (Either errs tree) f = case tree of 
             Leaf x     -> f x
-            Branch l r -> Either [] (Branch (l >>= f) (r >>= f))
+            Branch l r -> Either 
+                            (concatMap  ( (\( Either errs tree) -> errs ) . f) errs) 
+                            (Branch (l >>= f) (r >>= f))
+
+
 
 main :: IO ()
 main = do
